@@ -10,14 +10,12 @@ st.set_page_config(page_title="Retail Scenario Planner", layout="wide")
 st.title("📊 Retail Demand & Scenario Planner")
 st.markdown("Enter expected transaction details, weather, and historical data to simulate total sales revenue.")
 
-# --- 2. LOAD BOTH PIPELINE COMPONENTS ---
+# --- 2. LOAD PIPELINE COMPONENTS ---
 @st.cache_resource
 def load_models():
     current_dir=os.path.dirname(os.path.abspath(__file__))
-    prep_path=os.path.join(current_dir,'preprocessor.joblib')
     model_path=os.path.join(current_dir,'Revenue_pipeline_best.joblib')
     
-    preprocessor=joblib.load(prep_path)
     model=joblib.load(model_path)
     return preprocessor, model
 
@@ -28,11 +26,10 @@ except FileNotFoundError:
     st.error("⚠️ Could not find 'preprocessor.joblib' or 'model.joblib'. Please ensure both are in the same folder as this script.")
     models_loaded = False
 
-# --- 3. BUILD THE USER INTERFACE ---
+# --- 3.THE USER INTERFACE ---
 if models_loaded:
     with st.form("prediction_form"):
         
-        # --- Transaction & Customer Details ---
         st.subheader("🛒 Scenario Details (What-If Variables)")
         col_t1, col_t2, col_t3, col_t4 = st.columns(4)
         with col_t1:
@@ -46,7 +43,6 @@ if models_loaded:
 
         st.markdown("---")
         
-        # --- Date & Time Information ---
         st.subheader("📅 Date & Calendar Information")
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -58,7 +54,6 @@ if models_loaded:
 
         st.markdown("---")
         
-        # --- Weather Data ---
         st.subheader("🌤️ Expected Weather")
         col4, col5, col6 = st.columns(3)
         with col4:
@@ -72,7 +67,6 @@ if models_loaded:
 
         st.markdown("---")
         
-        # --- Historical Sales Lags & Rolling Averages ---
         st.subheader("📉 Historical Data")
         col7, col8 = st.columns(2)
         with col7:
@@ -86,7 +80,6 @@ if models_loaded:
 
     # --- 4. PREDICTION LOGIC ---
     if submit_button:
-        # Extract date features
         year = forecast_date.year
         month = forecast_date.month
         day = forecast_date.day
@@ -94,11 +87,9 @@ if models_loaded:
         is_weekend = 1 if day_of_week >= 5 else 0
         quarter = (month - 1) // 3 + 1
         
-        # Calculate Weekend_Holiday interaction
         weekend_holiday = 1 if (is_weekend == 1 and is_holiday == 1) else 0
 
-        # 🛡️ SAFETY NET 2: Exact mapping to your Train_data.csv (including 'Unnamed: 0')
-        # ❌ REMOVED 'Unnamed: 0' and any other extra debug columns
+
         input_data = {
             'Quantity': [quantity],
             'Unit Price': [unit_price],
@@ -122,7 +113,6 @@ if models_loaded:
             'Rainfall_Category': [rainfall_category]
         }
         try:
-            # 1. Define the exact 20 features the model was trained on (in order)
             expected_features = [
                 'Quantity', 'Unit Price', 'Discount', 'Year', 'Month', 'Day', 
                 'DayOfWeek', 'IsWeekend', 'Quarter', 'Sales_Lag_7', 'Sales_Lag_14',
@@ -137,7 +127,6 @@ if models_loaded:
 
         input_df = pd.DataFrame(input_data)
 
-        # 2. Force the dataframe to ONLY include these 20 columns
         input_df = input_df[expected_features]
 
 
